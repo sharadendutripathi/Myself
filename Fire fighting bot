@@ -1,0 +1,227 @@
+from tkinter import *
+from tkinter import Canvas,Frame,BOTH
+from PIL import ImageTk, Image
+import socket
+import cv2
+import matplotlib.pyplot as pl
+import time
+import io
+import struct
+import imagezmq
+from threading import *
+
+class GUI:
+    def __init__(self,t):
+        self.t=t
+        
+    def buttons(self,t):
+        self.p1=  ImageTk.PhotoImage(Image.open(r"S:\Ideas\Fire safety Bot\left.png"))
+        self.p2= ImageTk.PhotoImage(Image.open(r"S:\Ideas\Fire safety Bot\right.png"))
+        self.p3= ImageTk.PhotoImage(Image.open(r"S:\Ideas\Fire safety Bot\up.png"))
+        self.p4= ImageTk.PhotoImage(Image.open(r"S:\Ideas\Fire safety Bot\down.png"))
+        self.p5 = Image.open(r"S:\Ideas\Fire safety Bot\fan.png")  
+        self.p5 = self.p5.resize((80, 80), Image.ANTIALIAS) 
+        self.p5 = ImageTk.PhotoImage(self.p5)
+        self.p6 = Image.open(r"S:\Ideas\Fire safety Bot\valve.png")  
+        self.p6 = self.p6.resize((80, 60), Image.ANTIALIAS)
+        self.p6= ImageTk.PhotoImage(self.p6)
+        
+        self.a = Button(t, image=self.p1,height =25, width=30)
+        self.b = Button(t, image=self.p2,height =25, width=30)
+        self.c = Button(t, image=self.p3,height =25, width=30)
+        self.d = Button(t, image=self.p4,height =25, width=30)
+        self.e = Button(t, image=self.p5,compound= LEFT, bd=0, height =62, width=80)
+        self.f = Button(t, image=self.p6,bd=0, height =62, width=70)
+        
+    def buttons_appear(self):
+        self.a.place(relx=0.442, rely=0.98, anchor= SW)
+        self.b.place(relx=0.530, rely=0.98, anchor= SE)
+        self.c.place(relx=0.499, rely=0.925, anchor= SE)
+        self.d.place(relx=0.499, rely=0.98, anchor= SE)
+        self.e.place(relx=0.2,rely=0.98,anchor=SW)
+        self.f.place(relx=0.7,rely=0.98,anchor=SW)
+
+        
+    def buttons_erase(self):
+        self.a.place_forget()
+        self.b.place_forget()
+        self.c.place_forget()
+        self.d.place_forget()
+        self.e.place_forget()
+        self.f.place_forget()
+    
+        
+
+    def labels(self,t):
+    
+        self.l1 = Label(t, text="HOST:",bg="cornsilk2",bd=1)
+        self.l1.place(relx=0.03, rely=0.001, anchor= NE)
+        self.l2 = Label(t, text="Port:",bg="cornsilk2",bd=1)
+        self.l2.place(relx=0.19, rely=0.001, anchor= NE)
+        
+        self.l3 = Label(t,bg="cornsilk2",bd=1)
+        self.l3.place(relx=0.87, rely=0.9, anchor= SE)
+        '''
+        self.l4 = Label(t, text="IR:",bg="cornsilk2",bd=0)
+        self.l4.place(relx=0.83, rely=0.927, anchor= SE)
+        self.l5 = Label(t, text="Smoke:",bg="cornsilk2",bd=0)
+        self.l5.place(relx=0.85, rely=0.957, anchor= SE)
+        self.l6 = Label(t, text="L",bg="cornsilk2",bd=0)
+        self.l6.place(relx=0.87, rely=0.927, anchor= SE)
+        self.l7 = Label(t, text="C",bg="cornsilk2",bd=0)
+        self.l7.place(relx=0.92, rely=0.927, anchor= SE)
+        self.l8 = Label(t, text="R",bg="cornsilk2",bd=0)
+        self.l8.place(relx=0.97, rely=0.927, anchor= SE)
+        '''
+        self.l9 = Label(t, text="MANUAL",bg="cornsilk2",fg="green",bd=0)
+        self.l9.place(relx=0.82, rely=0.028, anchor= SE)
+        
+    '''
+    def entry(self,t):
+        self.H = Entry(t, bd =1)
+        self.H.place(relx=0.13, rely=0.001, anchor= NE)
+        self.P = Entry(t, bd =1)
+        self.P.place(relx=0.29, rely=0.001, anchor= NE)
+    '''    
+        
+    def canvas(self,t):
+        canvas = Canvas(t, height = 1080, width= 720)
+        canvas.create_line(0, 615,1400,615,width=5)
+        canvas.create_line(0,20,1400,20,width=5)
+        canvas.create_rectangle(0, 0, 1400, 20, fill='cornsilk2')
+        
+        canvas.create_rectangle(0, 615, 260, 695, fill='cornsilk2')
+        ''' 
+        canvas.create_rectangle(0, 635, 260, 655, fill='cornsilk2')
+        canvas.create_rectangle(0, 655, 260, 675, fill='cornsilk2')
+        canvas.create_rectangle(0, 675, 260, 695, fill='cornsilk2')
+        canvas.create_rectangle(1100, 615, 1400, 635, fill='cornsilk2')
+        canvas.create_rectangle(1100, 635, 1400, 655, fill='cornsilk2')
+        canvas.create_rectangle(1100, 655, 1400, 675, fill='cornsilk2')
+        '''
+        canvas.create_rectangle(1100, 615, 1400, 695, fill='cornsilk2')
+        canvas.create_oval(1200, 638 , 1210,648, fill="blue")
+        canvas.create_oval(1275, 638 , 1285,648, fill="blue")
+        canvas.create_oval(1340, 638 , 1350,648, fill="blue")
+        lmain = Label(canvas)
+        lmain.pack(pady=20)
+        canvas.pack(fill=BOTH,expand=1)
+        t.call("lower",canvas)
+m=True
+def rpi_video():
+    image_hub = imagezmq.ImageHub(open_port='tcp://192.168.43.143:12345')
+    while True:
+        rpi_name, img = image_hub.recv_image()
+        b,g,r = cv2.split(img)
+        img = cv2.merge((r,g,b))
+        img = Image.fromarray(img)
+        img = ImageTk.PhotoImage(img)
+        lmain.configure(image=img)
+        lmain.image = img
+        image_hub.send_reply(b'OK')
+
+def control(g,t):
+    
+    global m
+      
+    # Determin is on or off
+    if m:
+        h.config(image = off)
+        m= False
+        g.buttons_erase()
+        
+    else:
+        h.config(image = on)
+        m = True
+        g.buttons_appear()
+    
+    
+def connection():
+    if g.config('text')[-1] =='CONNECT':
+            HOST = str(H.get())
+            PORT = int(P.get())
+            
+            try:
+                s.bind((HOST,PORT))
+                g.config(text='CONNECTED',bg="green")
+                s.listen(10)
+                conn,addr=s.accept()
+                g.config(text='CONNECTED',bg="green")
+                while True:
+                    rcv = s.recv(1024).decode()
+                    d=ast.literal_eval(rcv)
+                    for i in d:
+                        l3.config(text=(i,d[i]))
+                    #sendData = raw_input("N: ")
+                    #s.send(sendData.encode())
+           
+                      
+            except socket.error:
+                g.config(text='FAILED',bg="red")
+                time.sleep(3)
+    return PORT
+
+def threading():
+    t=Thread(target=gui, args=(G,tk))
+    t.start()
+
+def threading1():
+    t1=Thread(target=connection)
+    t1.start()
+    
+def threading2():
+    t2=Thread(target=rpi_video)
+    t2.start()        
+        
+def threading3():
+    t3=Thread(target=control, args=(G,tk))
+    t3.start()
+def gui(G,t):
+    try:
+        G.canvas(t)
+        G.buttons(t)
+        G.labels(t)
+    
+    except AttributeError:
+        G.canvas(t)
+        G.buttons(t)
+        G.labels(t)
+
+
+s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+
+
+
+tk = Tk()
+tk.geometry("1080x720")
+tk.configure(bg="white")
+tk.title("  FIREFIX CONTROL:")
+p = PhotoImage(file = 'S:\Ideas\Fire safety Bot\F.png')
+tk.iconphoto(False,p)
+
+G=GUI(tk)
+#gui(G,tk)
+threading()
+on=Image.open(r"S:\Ideas\Fire safety Bot\on.png")
+on=on.resize((60,25),Image.ANTIALIAS)
+on=ImageTk.PhotoImage(on)
+off=Image.open(r"S:\Ideas\Fire safety Bot\off.png")
+off=off.resize((60,25),Image.ANTIALIAS)
+off= ImageTk.PhotoImage(off)
+h = Button(tk,bd=0,command=threading3,bg="cornsilk2", height =16, width=70)
+h.place(relx=0.9,rely=0.03,anchor=SE)
+
+
+
+H = Entry(tk, bd =1)
+H.place(relx=0.13, rely=0.001, anchor= NE)
+P = Entry(tk, bd =1)
+P.place(relx=0.29, rely=0.001, anchor= NE)
+H = StringVar()
+P = IntVar()
+g = Button(tk,text = "CONNECT" ,bd=0,bg="salmon1",command=threading1, height =1, width=10)
+g.place(relx=0.4,rely=0.03,anchor=SE)
+threading3()
+
+tk.mainloop()
